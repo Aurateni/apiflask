@@ -2,17 +2,16 @@ from flask import abort, make_response
 from config import db
 from models import Person, person_schema, people_schema
 
+
 def create(person):
     lname = person.get('lname')
-    fname = person.get('fname', '')
+    existing_person = Person.query.filter(Person.lname == lname).one_or_one()
 
-    if lname and lname not in PEOPLE:
-        PEOPLE[lname] = {
-            'lname': lname,
-            'fname': fname,
-            'timestamp': get_timestamp()
-        }
-        return PEOPLE[lname], 201
+    if existing_person is None:
+        new_person = person_schema.load(person, session=db.session)
+        db.session.add(new_person)
+        db.session.commit()
+        return person_schema.dump(new_person), 201
     else:
         abort(
             406,
@@ -21,10 +20,14 @@ def create(person):
 
 
 def update(lname, person):
-    if lname in PEOPLE:
-        PEOPLE[lname]["fname"] = person.get("fname", PEOPLE[lname]["fname"])
-        PEOPLE[lname]["timestamp"] = get_timestamp()
-        return PEOPLE[lname]
+    existing_person = Person.query.filter(Person.lname == lname).one_or_one()
+
+    if existing_person:
+        update_person = person_schema.load(person, session=db.session)
+        existing_person.fname = update_person.fname
+        db.session.merge(existing_person)
+        db.session.commit()
+        return person_schema.dump(existing_person), 201
 
     else:
         abort(
@@ -34,11 +37,12 @@ def update(lname, person):
 
 
 def delete(lname):
-    if lname in PEOPLE:
-        del PEOPLE[lname]
-        return make_response(
-            f'{lname} successfully deleted', 200
-        )
+    existing_person = Person.query.filter(Person.lname == lname).one_or_one()
+
+    if existing_person:
+        db.session.delete(existing_person)
+        db.session.commit()
+        return make_response(f"{lname} successfully deleted", 200)
     else:
         abort(
             404,

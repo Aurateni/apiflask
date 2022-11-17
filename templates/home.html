@@ -8,6 +8,11 @@
     <h1>
         HI!
     </h1>
+    <ul>
+        {% for person in people %}
+        <li>{{person.fname}}{{person.lname}}</li>
+        {% endfor %}
+    </ul>
 
 </body>
 </html>
