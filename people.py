@@ -1,6 +1,6 @@
 from flask import abort, make_response
 from config import db
-from models import Person, person_schema, people_schema
+from models import Person, person_schema, people_schema, PersonSchema
 
 
 def create(person):
@@ -62,4 +62,5 @@ def read_one(lname):
 
 def read_all():
     people = Person.query.all()
+    person_schema = PersonSchema(many=True)
     return person_schema.dump(people)
